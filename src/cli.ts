@@ -21,6 +21,8 @@ import { cmdConfigEdit } from "./commands/config.js";
 import { cmdBackupsList, cmdBackupsOpen } from "./commands/backups.js";
 import { cmdReport } from "./commands/report.js";
 import { cmdFinish } from "./commands/finish.js";
+import { cmdRetake } from "./commands/retake.js";
+import { cmdPromptStart } from "./commands/prompt.js";
 
 const VERSION = "0.1.0";
 const program = new Command();
@@ -130,11 +132,17 @@ backups.command("list").description("list repos with backups").action(cmdBackups
 backups.command("open").description("open this repo's backup directory").action(cmdBackupsOpen);
 
 // report
-program.command("report").description("ASCII summary of current repo status").action(cmdReport);
+program.command("report").option("--ai", "generate AI narrative (requires Claude CLI)").description("summary of current repo status").action((o)=>cmdReport({ ai: !!o.ai }));
 
 // finish (ticket)
 program.command("finish").argument("[message...]", "final note").description("record final ticket note and run interactive merge").action((m?: string[])=>cmdFinish(m?.join(" ")));
 program.command("fin").argument("[message...]", "final note").description("alias of finish").action((m?: string[])=>cmdFinish(m?.join(" ")));
+
+// retake (refresh scans and baseline; optional README inject)
+program.command("retake").option("--update-readme", "inject summary between README markers").description("rescan impact, refresh context + baseline, write project summary").action((o)=>cmdRetake({ updateReadme: !!o.updateReadme }));
+
+// prompt
+program.command("prompt").command("start").option("--open", "open the prompt file in editor").description("scaffold a feature prompt under srcPlanning").action((o)=>cmdPromptStart({ open: !!o.open }));
 
 // zero-arg → status
 if (!process.argv.slice(2).length) {
