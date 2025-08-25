@@ -22,7 +22,7 @@ import { cmdBackupsList, cmdBackupsOpen } from "./commands/backups.js";
 import { cmdReport } from "./commands/report.js";
 import { cmdFinish } from "./commands/finish.js";
 import { cmdRetake } from "./commands/retake.js";
-import { cmdPromptStart } from "./commands/prompt.js";
+import { cmdPromptStart, cmdPromptVoice, cmdPromptAnalyze } from "./commands/prompt.js";
 const VERSION = "0.1.0";
 const program = new Command();
 program.name("lc").description("letscode: local store + Claude wiring").version(VERSION);
@@ -121,7 +121,10 @@ program.command("fin").argument("[message...]", "final note").description("alias
 // retake (refresh scans and baseline; optional README inject)
 program.command("retake").option("--update-readme", "inject summary between README markers").description("rescan impact, refresh context + baseline, write project summary").action((o) => cmdRetake({ updateReadme: !!o.updateReadme }));
 // prompt
-program.command("prompt").command("start").option("--open", "open the prompt file in editor").description("scaffold a feature prompt under srcPlanning").action((o) => cmdPromptStart({ open: !!o.open }));
+const promptCmd = program.command("prompt").description("prompt helpers");
+promptCmd.command("start").option("--open", "open the prompt file in editor").description("scaffold a feature prompt under srcPlanning").action((o) => cmdPromptStart({ open: !!o.open }));
+promptCmd.command("voice").option("--mic", "enable microphone in Claude session").description("start a voice session to draft PRD; saves to PROMPT.md").action((o) => cmdPromptVoice({ mic: !!o.mic }));
+promptCmd.command("analyze").description("run AI analysis of PROMPT.md into ANALYSIS.md").action(() => cmdPromptAnalyze());
 // zero-arg → status
 if (!process.argv.slice(2).length) {
     await cmdStatus();
