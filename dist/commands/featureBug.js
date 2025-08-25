@@ -4,7 +4,7 @@ import { execa } from "execa";
 import prompts from "prompts";
 import { ensureLocalScaffold, repoRoot, BASE_DIR, LOCAL_DIR } from "../lib/paths.js";
 import { slugify } from "../lib/util.js";
-async function nextIndex(root) {
+export async function nextIndex(root) {
     const feat = path.join(root, BASE_DIR, "features");
     const bugs = path.join(root, BASE_DIR, "bugs");
     const all = [];

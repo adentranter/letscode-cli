@@ -1,7 +1,9 @@
 import chalk from "chalk";
 import { execa } from "execa";
 import prompts from "prompts";
-import { ensureLocalScaffold, repoRoot } from "../lib/paths.js";
+import fs from "fs-extra";
+import path from "path";
+import { ensureLocalScaffold, repoRoot, LOCAL_DIR } from "../lib/paths.js";
 import { appendNdjson } from "../lib/util.js";
 import { currentBranch, currentTicket } from "../lib/git.js";
 import { cmdCommit } from "./commit.js";
@@ -46,6 +48,31 @@ export async function cmdCmerge(opts: { message?: string; skipBuild?: boolean } 
       : `Merge ${source} into ${target}`;
     const { msg } = await prompts({ type: "text", name: "msg", message: "Merge message", initial: suggested });
     opts.message = msg || suggested;
+
+    // Acceptance criteria check (if ticket has metadata)
+    const t = await currentTicket();
+    if (t) {
+      const metaPath = path.join(root, LOCAL_DIR, "tickets", t.id, "ticket.json");
+      try {
+        const meta = await fs.readJSON(metaPath);
+        const ac: string[] = Array.isArray(meta?.acceptance) ? meta.acceptance : [];
+        const alreadyClosed = !!meta?.closedAt;
+        if (ac.length && !alreadyClosed) {
+          console.log("\nAcceptance criteria:");
+          ac.forEach((a: string, i: number) => console.log(`  ${i+1}. ${a}`));
+          const { ok } = await prompts({ type: "confirm", name: "ok", message: "Have all acceptance criteria been met?", initial: true });
+          if (!ok) {
+            const { cont } = await prompts({ type: "confirm", name: "cont", message: "Proceed with merge anyway?", initial: false });
+            if (!cont) { console.log("[INFO] Merge aborted."); return; }
+          } else {
+            const { note } = await prompts({ type: "text", name: "note", message: "Acceptance note (optional)" });
+            const ts = new Date().toISOString();
+            await fs.outputFile(metaPath, JSON.stringify({ ...meta, closedAt: ts, acceptanceNote: note || "" }, null, 2));
+            await appendNdjson(events, { type: "ticket.accepted", ts, ticket: t.id, acceptance: ac, note: note || "" });
+          }
+        }
+      } catch {}
+    }
   }
 
   // Ensure working tree is clean (or offer to commit in interactive mode)
