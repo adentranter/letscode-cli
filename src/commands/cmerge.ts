@@ -67,8 +67,11 @@ export async function cmdCmerge(opts: { message?: string; skipBuild?: boolean } 
           } else {
             const { note } = await prompts({ type: "text", name: "note", message: "Acceptance note (optional)" });
             const ts = new Date().toISOString();
-            await fs.outputFile(metaPath, JSON.stringify({ ...meta, closedAt: ts, acceptanceNote: note || "" }, null, 2));
-            await appendNdjson(events, { type: "ticket.accepted", ts, ticket: t.id, acceptance: ac, note: note || "" });
+            const created = meta?.createdAt ? new Date(meta.createdAt) : null;
+            const durationH = created ? ((+new Date(ts) - +created) / (1000*60*60)) : null;
+            const updated = { ...meta, closedAt: ts, acceptanceNote: note || "", ...(durationH!==null ? { actualHours: Number(durationH.toFixed(2)) } : {}) };
+            await fs.outputFile(metaPath, JSON.stringify(updated, null, 2));
+            await appendNdjson(events, { type: "ticket.accepted", ts, ticket: t.id, acceptance: ac, note: note || "", ...(durationH!==null ? { duration_hours: Number(durationH.toFixed(2)) } : {}) });
           }
         }
       } catch {}
@@ -116,6 +119,23 @@ export async function cmdCmerge(opts: { message?: string; skipBuild?: boolean } 
     ts: new Date().toISOString(),
     source,
     target,
+    metrics: await (async ()=>{
+      try {
+        const { stdout } = await execa("git", ["log", "--oneline", "--numstat", "--format=", `${target}..${source}`], { cwd: root });
+        let filesChanged=0, insertions=0, deletions=0;
+        const lines = stdout.split(/\r?\n/).filter(Boolean);
+        for (const line of lines) {
+          const parts = line.split(/\t/);
+          if (parts.length >= 3) {
+            filesChanged++;
+            const ins = parseInt(parts[0], 10); const del = parseInt(parts[1], 10);
+            if (Number.isFinite(ins)) insertions += ins;
+            if (Number.isFinite(del)) deletions += del;
+          }
+        }
+        return { filesChanged, insertions, deletions };
+      } catch { return undefined; }
+    })()
   });
 
   console.log(chalk.green("[GIT] merged"), source, chalk.gray("→"), target);

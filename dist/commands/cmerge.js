@@ -132,6 +132,29 @@ export async function cmdCmerge(opts = {}) {
         ts: new Date().toISOString(),
         source,
         target,
+        metrics: await (async () => {
+            try {
+                const { stdout } = await execa("git", ["log", "--oneline", "--numstat", "--format=", `${target}..${source}`], { cwd: root });
+                let filesChanged = 0, insertions = 0, deletions = 0;
+                const lines = stdout.split(/\r?\n/).filter(Boolean);
+                for (const line of lines) {
+                    const parts = line.split(/\t/);
+                    if (parts.length >= 3) {
+                        filesChanged++;
+                        const ins = parseInt(parts[0], 10);
+                        const del = parseInt(parts[1], 10);
+                        if (Number.isFinite(ins))
+                            insertions += ins;
+                        if (Number.isFinite(del))
+                            deletions += del;
+                    }
+                }
+                return { filesChanged, insertions, deletions };
+            }
+            catch {
+                return undefined;
+            }
+        })()
     });
     console.log(chalk.green("[GIT] merged"), source, chalk.gray("→"), target);
 }
