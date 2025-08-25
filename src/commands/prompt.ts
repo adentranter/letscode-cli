@@ -25,16 +25,23 @@ export async function cmdPromptStart(opts: { open?: boolean } = {}) {
 export async function cmdPromptVoice(opts: { mic?: boolean } = {}) {
   const root = await repoRoot();
   const t = await currentTicket();
-  if (!t) throw new Error("Not on a ticket branch");
-  const dir = path.join(root, BASE_DIR, t.kind === 'feature' ? 'features' : 'bugs', `${t.index}-${t.slug}`);
+  // fallback target when not on a ticket: repo overview prompt
+  const isOverview = !t;
+  const dir = isOverview
+    ? path.join(root, BASE_DIR, 'features', '0-overview')
+    : path.join(root, BASE_DIR, t!.kind === 'feature' ? 'features' : 'bugs', `${t!.index}-${t!.slug}`);
   await fs.ensureDir(dir);
   const promptFile = path.join(dir, "PROMPT.md");
   if (!(await fs.pathExists(promptFile))) {
-    await fs.outputFile(promptFile, `# Prompt: ${t.slug}\n\nPlease draft a PRD for this ${t.kind}.\n`);
+    const title = isOverview ? 'overview' : t!.slug;
+    const kind = isOverview ? 'project' : t!.kind;
+    await fs.outputFile(promptFile, `# Prompt: ${title}\n\nPlease draft a PRD for this ${kind}.\n`);
   }
   const seed = [
-    `You are connected to this repo. Ticket: ${t.id} (${t.branch}).`,
-    `Task: Create a concise PRD for this work. Save content to: ${path.relative(root, promptFile)}.`,
+    isOverview
+      ? `You are connected to this repo. Create a concise PRD for the overall project.`
+      : `You are connected to this repo. Ticket: ${t!.id} (${t!.branch}). Task: Create a concise PRD for this work.`,
+    `Save content to: ${path.relative(root, promptFile)}.`,
     `Rules: Keep it actionable: goals, scope, acceptance, risks, milestones.`,
     `Acknowledge and begin by outlining the PRD sections, then fill them.`
   ].join("\n");
@@ -54,6 +61,12 @@ export async function cmdPromptVoice(opts: { mic?: boolean } = {}) {
   } catch {}
   try {
     await cmdPromptAnalyze();
+  } catch {}
+  // stamp last voice session
+  try {
+    const qaDir = path.join(root, ".letscode", "qa");
+    await fs.ensureDir(qaDir);
+    await fs.outputJSON(path.join(qaDir, "lastVtv.json"), { ts: new Date().toISOString(), target: isOverview ? 'overview' : (t!.id) }, { spaces: 2 });
   } catch {}
 }
 

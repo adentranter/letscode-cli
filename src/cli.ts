@@ -145,6 +145,7 @@ program.command("retake").option("--update-readme", "inject summary between READ
 const promptCmd = program.command("prompt").description("prompt helpers");
 promptCmd.command("start").option("--open", "open the prompt file in editor").description("scaffold a feature prompt under srcPlanning").action((o)=>cmdPromptStart({ open: !!o.open }));
 promptCmd.command("voice").option("--mic", "enable microphone in Claude session").description("start a voice session to draft PRD; saves to PROMPT.md").action((o)=>cmdPromptVoice({ mic: !!o.mic }));
+program.command("vtv").description("quick voice-to-voice session (overview if not on a ticket)").action(()=>cmdPromptVoice({ mic: true }));
 promptCmd.command("analyze").description("run AI analysis of PROMPT.md into ANALYSIS.md").action(()=>cmdPromptAnalyze());
 
 // zero-arg → status

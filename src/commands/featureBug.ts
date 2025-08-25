@@ -5,6 +5,7 @@ import prompts from "prompts";
 import { ensureLocalScaffold, repoRoot, BASE_DIR, LOCAL_DIR } from "../lib/paths.js";
 import { ensureGitOrThrow } from "../lib/guard.js";
 import { slugify } from "../lib/util.js";
+import { cmdPromptVoice } from "./prompt.js";
 
 export async function nextIndex(root: string) {
   const feat = path.join(root, BASE_DIR, "features");
@@ -98,4 +99,22 @@ export async function createTicket(kind: "feature"|"bug", rawName: string, withR
   }) + "\n");
 
   console.log(`[INFO] ${kind} ready → ${folder} on ${branch}`);
+
+  // Suggest a quick voice-to-voice PRD session when starting a feature
+  if (kind === "feature") {
+    try {
+      const qaFile = path.join(root, LOCAL_DIR, "qa", "lastVtv.json");
+      let initial = true;
+      try {
+        const j = await fs.readJSON(qaFile);
+        const last = j?.ts ? new Date(j.ts).getTime() : 0;
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
+        initial = !last || (Date.now() - last) > sevenDays;
+      } catch {}
+      const { start } = await prompts({ type: "confirm", name: "start", message: "Start a quick voice-to-voice PRD session now?", initial });
+      if (start) {
+        await cmdPromptVoice({ mic: true });
+      }
+    } catch {}
+  }
 }

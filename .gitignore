@@ -1,2 +1,26 @@
+# deps/build
+node_modules/
+dist/
+*.tsbuildinfo
 
+# editors/OS
+.DS_Store
+.vscode/
+.idea/
+
+# tests/coverage/cache
+coverage/
+.nyc_output/
+.cache/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+*.log
 .letscode/
+.letscode/
+.claude/
+node_modules/
+dist/
+.DS_Store
