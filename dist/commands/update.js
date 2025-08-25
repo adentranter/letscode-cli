@@ -2,9 +2,12 @@ import path from "path";
 import fs from "fs-extra";
 import prompts from "prompts";
 import { ensureLocalScaffold, repoRoot, LOCAL_DIR } from "../lib/paths.js";
+import { ensureGitOrThrow, warnIfDefaultBranchDirty } from "../lib/guard.js";
 import { currentTicket } from "../lib/git.js";
 export async function cmdUpdate(message, opts = {}) {
     const root = await repoRoot();
+    await ensureGitOrThrow();
+    await warnIfDefaultBranchDirty();
     const { events, progress } = await ensureLocalScaffold(root);
     const ticket = await currentTicket();
     if (!ticket)

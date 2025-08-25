@@ -14,12 +14,13 @@ import { cmdCommit } from "./commands/commit.js";
 import { cmdCmerge } from "./commands/cmerge.js";
 import { cmdReflect } from "./commands/reflect.js";
 import { cmdWatch } from "./commands/watch.js";
-import { metricsRollup, metricsPredict, metricsView } from "./commands/metrics.js";
+import { metricsRollup, metricsPredict, metricsView, metricsTickets } from "./commands/metrics.js";
 import { impactScan, impactSet } from "./commands/impact.js";
 import { cmdBaseline } from "./commands/baseline.js";
 import { cmdConfigEdit } from "./commands/config.js";
 import { cmdBackupsList, cmdBackupsOpen } from "./commands/backups.js";
 import { cmdReport } from "./commands/report.js";
+import { cmdFinish } from "./commands/finish.js";
 const VERSION = "0.1.0";
 const program = new Command();
 program.name("lc").description("letscode: local store + Claude wiring").version(VERSION);
@@ -40,10 +41,10 @@ program.command("ta").argument("<title...>").option("--files <a,b>", "comma-sepa
 program.command("td").argument("<idx>", "1-based index").description("alias: todo done").action(cmdTodoDone);
 program.command("tr").argument("<idx>", "1-based index").description("alias: todo rm").action(cmdTodoRemove);
 // tickets
-program.command("feature").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, !!o.interactive));
-program.command("bug").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, !!o.interactive));
-program.command("f").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, !!o.interactive));
-program.command("b").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, !!o.interactive));
+program.command("feature").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, o.interactive === undefined ? true : !!o.interactive));
+program.command("bug").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, o.interactive === undefined ? true : !!o.interactive));
+program.command("f").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, o.interactive === undefined ? true : !!o.interactive));
+program.command("b").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, o.interactive === undefined ? true : !!o.interactive));
 // updates
 program.command("update")
     .argument("[message...]", "what changed")
@@ -90,9 +91,11 @@ const metrics = program.command("metrics").description("metrics rollup/predict/v
 metrics.command("rollup").description("export CSVs to .letscode/metrics/").action(metricsRollup);
 metrics.command("predict").description("compute velocity and ETA").action(metricsPredict);
 metrics.command("view").description("generate metrics viewer HTML").action(metricsView);
+metrics.command("tickets").description("export tickets estimates vs actuals").action(metricsTickets);
 program.command("mr").description("alias: metrics rollup").action(metricsRollup);
 program.command("mp").description("alias: metrics predict").action(metricsPredict);
 program.command("mv").description("alias: metrics view").action(metricsView);
+program.command("mt").description("alias: metrics tickets").action(metricsTickets);
 // impact
 const impact = program.command("impact").description("impact registries and ticket scope");
 impact.command("scan").description("scan prisma/sql/openapi and hot files").action(impactScan);
@@ -110,6 +113,9 @@ backups.command("list").description("list repos with backups").action(cmdBackups
 backups.command("open").description("open this repo's backup directory").action(cmdBackupsOpen);
 // report
 program.command("report").description("ASCII summary of current repo status").action(cmdReport);
+// finish (ticket)
+program.command("finish").argument("[message...]", "final note").description("record final ticket note and run interactive merge").action((m) => cmdFinish(m?.join(" ")));
+program.command("fin").argument("[message...]", "final note").description("alias of finish").action((m) => cmdFinish(m?.join(" ")));
 // zero-arg → status
 if (!process.argv.slice(2).length) {
     await cmdStatus();
