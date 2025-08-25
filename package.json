@@ -1,0 +1,39 @@
+{
+  "name": "letscode",
+  "version": "0.1.0",
+  "description": "Local-first project planning + Claude Code wiring",
+  "type": "module",
+  "bin": {
+    "lc": "dist/cli.js",
+    "letscode": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "dev": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build && node -e \"require('fs').accessSync('dist/cli.js')\""
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "chokidar": "^3.6.0",
+    "commander": "^12.1.0",
+    "execa": "^9.3.0",
+    "fs-extra": "^11.2.0",
+    "prompts": "^2.4.2"
+  },
+  "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^22.0.0",
+    "@types/prompts": "^2.4.9",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.2"
+  }
+}
