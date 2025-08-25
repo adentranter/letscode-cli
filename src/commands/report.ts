@@ -48,6 +48,40 @@ export async function cmdReport(opts?: { ai?: boolean }) {
   const f = (await fs.pathExists(fdir)) ? (await fs.readdir(fdir)).length : 0;
   const b = (await fs.pathExists(bdir)) ? (await fs.readdir(bdir)).length : 0;
 
+  // events-driven insights
+  const eventsFile = path.join(root, LOCAL_DIR, "events.ndjson");
+  let updates: any[] = [];
+  let recentDiff = { filesChanged: 0, insertions: 0, deletions: 0 };
+  let ticketAccepted: any | null = null;
+  let aiEstimateHours: number | undefined = undefined;
+  try {
+    const raw = await fs.readFile(eventsFile, "utf8");
+    const lines = raw.split(/\r?\n/).filter(Boolean).map(l=>{ try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    if (ticket) {
+      updates = lines.filter((e:any)=>e.type==="ticket.update" && e.ticket===ticket.id).slice(-5);
+      const accepted = lines.reverse().find((e:any)=>e.type==="ticket.accepted" && e.ticket===ticket.id);
+      ticketAccepted = accepted || null;
+    } else {
+      updates = lines.filter((e:any)=>e.type==="ticket.update").slice(-5);
+    }
+    // accumulate commit/merge diff metrics from last ~20 events
+    for (const e of lines.slice(-50)) {
+      if ((e.type==="git.commit" || e.type==="git.merge") && e.metrics) {
+        recentDiff.filesChanged += e.metrics.filesChanged||0;
+        recentDiff.insertions += e.metrics.insertions||0;
+        recentDiff.deletions += e.metrics.deletions||0;
+      }
+    }
+  } catch {}
+
+  // read aiEstimateHours from ticket meta if present
+  if (ticket) {
+    try {
+      const meta = await fs.readJSON(path.join(root, LOCAL_DIR, "tickets", ticket.id, "ticket.json"));
+      if (typeof meta?.aiEstimateHours === 'number') aiEstimateHours = meta.aiEstimateHours;
+    } catch {}
+  }
+
   if (opts?.ai) {
     // Ensure context is fresh, then ask Claude for a concise narrative report
     try { await cmdContext({ stdout: false }); } catch {}
@@ -87,15 +121,33 @@ export async function cmdReport(opts?: { ai?: boolean }) {
     console.log("Progress : [....................] 0%" );
   }
   console.log("");
+  if (updates.length) {
+    console.log("Updates  : (latest)");
+    for (const u of updates) {
+      const mins = typeof u.elapsedMs === 'number' ? ` | +${Math.round(u.elapsedMs/60000)}m` : "";
+      const diff = u.workingDiff ? ` | Δ ${u.workingDiff.filesChanged}/${u.workingDiff.insertions}+/${u.workingDiff.deletions}-` : "";
+      const files = typeof u.filesTouched === 'number' ? ` | files ${u.filesTouched}` : "";
+      console.log(`  - ${u.message}${mins}${files}${diff}`);
+    }
+    console.log("");
+  }
   console.log(`TODOs    : ${openTodos.length} open`);
   openTodos.slice(0,5).forEach((t,i)=>console.log(`  ${i+1}. ${t.title}${t.files?.length? ' ['+t.files.join(', ')+']':''}`));
   if (openTodos.length > 5) console.log(`  ... +${openTodos.length-5} more`);
   console.log("");
   console.log("Commits  :");
   commits.forEach(c=>console.log(`  ${c.date} ${c.hash} ${c.message}`));
+  if (recentDiff.filesChanged || recentDiff.insertions || recentDiff.deletions) {
+    console.log(`  Δ recent: ${recentDiff.filesChanged} files, +${recentDiff.insertions}/-${recentDiff.deletions}`);
+  }
   if (velocity) {
     console.log("");
     console.log(`Velocity : ${velocity.dailyVelocity || 0}%/day  | ETA: ${velocity.etaDate || 'n/a'}`);
+  }
+  if (ticket && (aiEstimateHours!==undefined || ticketAccepted)) {
+    const actual = ticketAccepted?.duration_hours;
+    console.log("");
+    console.log("Estimate :" + (aiEstimateHours!==undefined ? ` AI≈${aiEstimateHours}h` : "") + (actual!==undefined ? ` | actual≈${Number(actual).toFixed(1)}h` : ""));
   }
   console.log("");
 }
