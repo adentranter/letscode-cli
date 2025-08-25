@@ -37,10 +37,10 @@ program.command("ta").argument("<title...>").option("--files <a,b>", "comma-sepa
 program.command("td").argument("<idx>", "1-based index").description("alias: todo done").action(cmdTodoDone);
 program.command("tr").argument("<idx>", "1-based index").description("alias: todo rm").action(cmdTodoRemove);
 // tickets
-program.command("feature").argument("<name...>").option("--readme", "scaffold README").description("start a feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme));
-program.command("bug").argument("<name...>").option("--readme", "scaffold README").description("start a bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme));
-program.command("f").argument("<name...>").option("--readme", "scaffold README").description("alias of feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme));
-program.command("b").argument("<name...>").option("--readme", "scaffold README").description("alias of bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme));
+program.command("feature").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, !!o.interactive));
+program.command("bug").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("start a bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, !!o.interactive));
+program.command("f").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of feature").action((name, o) => createTicket("feature", name.join(" "), !!o.readme, !!o.interactive));
+program.command("b").argument("<name...>").option("--readme", "scaffold README").option("--interactive", "prompt for goal/acceptance/estimate").description("alias of bug").action((name, o) => createTicket("bug", name.join(" "), !!o.readme, !!o.interactive));
 // updates
 program.command("update")
     .argument("[message...]", "what changed")
