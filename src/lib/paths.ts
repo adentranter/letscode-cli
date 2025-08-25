@@ -38,6 +38,14 @@ export async function ensureLocalScaffold(root: string) {
   if (!(await fs.pathExists(progress))) await fs.outputFile(progress, "");
   if (!(await fs.pathExists(todo)))     await fs.outputJSON(todo, []);
 
+  // write schema/app version stamp for migrations
+  try {
+    const pkg = await fs.readJSON(path.join(root, "package.json")).catch(()=>({} as any));
+    const verFile = path.join(log, "version.json");
+    const payload = { schemaVersion: 1, lcVersion: pkg?.version ?? "0.0.0", stampedAt: new Date().toISOString() };
+    await fs.outputJSON(verFile, payload, { spaces: 2 });
+  } catch {}
+
   // .gitignore the local store
   const gi = path.join(root, ".gitignore");
   try {

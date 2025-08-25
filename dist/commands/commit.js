@@ -26,6 +26,27 @@ export async function cmdCommit(message, opts = { stage: true }) {
     const [h, date, subject] = meta.split("|");
     const branch = await currentBranch();
     const ticket = await currentTicket();
+    // diff metrics for this commit
+    let filesChanged = 0;
+    let insertions = 0;
+    let deletions = 0;
+    try {
+        const { stdout: numstat } = await execa("git", ["show", "--numstat", "--format=", h || hash.trim()], { cwd: root });
+        const lines = numstat.split(/\r?\n/).filter(Boolean);
+        filesChanged = lines.length;
+        for (const line of lines) {
+            const parts = line.split(/\t/);
+            if (parts.length >= 3) {
+                const ins = parseInt(parts[0], 10);
+                const del = parseInt(parts[1], 10);
+                if (Number.isFinite(ins))
+                    insertions += ins;
+                if (Number.isFinite(del))
+                    deletions += del;
+            }
+        }
+    }
+    catch { }
     await appendNdjson(events, {
         type: "git.commit",
         ts: new Date().toISOString(),
@@ -33,6 +54,7 @@ export async function cmdCommit(message, opts = { stage: true }) {
         date,
         subject,
         branch,
+        metrics: { filesChanged, insertions, deletions },
         ...(ticket ? { ticket: ticket.id } : {}),
     });
     console.log(chalk.green("[GIT] committed"), hash.trim(), chalk.gray(`(${subject})`));

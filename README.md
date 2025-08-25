@@ -126,3 +126,42 @@ lc m
 ```bash
 lc baseline
 ```
+
+## Data captured & insights
+
+What lc records to help you reason about work and pace:
+
+- Events (`.letscode/events.ndjson`)
+  - feature.create / bug.create: id, branch, createdAt
+  - ticket.update: message, files, filesTouched, elapsedMs since last update, workingDiff { filesChanged, insertions, deletions }, optional tag
+  - progress.set: { ts, percent, gist }
+  - git.commit: hash, subject, metrics { filesChanged, insertions, deletions }
+  - git.merge: source→target, metrics accumulated over merge range
+  - ticket.accepted: acceptance list, note, duration_hours (created→closed)
+
+- Tickets (`.letscode/tickets/<id>/`)
+  - ticket.json: metadata from --interactive (goal, acceptance, estimate, stakeholders, risks), closure { closedAt, actualHours }, aiEstimateHours
+  - updates.ndjson: per-ticket notes timeline
+  - progress.ndjson: per-ticket percent snapshots (from `lc fin`)
+
+- Context & baselines
+  - claude-context.json: snapshot used for AI reports
+  - baseline.json: Claude (or local) repo baseline summary
+  - project-summary.md: retake-generated high-level summary
+
+- Metrics (`.letscode/metrics/`)
+  - progress_timeseries.csv, todos_timeseries.csv
+  - velocity.json: dailyVelocity and ETA
+  - tickets.csv: estimates vs actuals (hours, variance)
+  - viewer.html: simple charts for progress/TODOs
+
+- Registry (`.letscode/registry/`)
+  - impact-scan.json: prisma models, SQL tables, OpenAPI paths, recent hot files
+
+AI-powered summaries
+- `lc report --ai`: concise narrative status report saved to `.letscode/report-ai.md`
+- `lc retake`: refresh scan/context/baseline and write `project-summary.md` (optionally inject into README between `<!-- lc:summary:start -->` and `<!-- lc:summary:end -->`)
+- `lc prompt start|voice|analyze`: scaffold `srcPlanning/.../PROMPT.md`, run a Claude session, then generate `ANALYSIS.md` and store `aiEstimateHours`
+
+Finish flow
+- `lc fin` records a final ticket note and per-ticket progress, runs interactive merge with acceptance check, marks the ticket closed, then runs a `retake` to refresh summaries.

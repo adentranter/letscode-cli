@@ -90,6 +90,32 @@ export async function cmdPromptAnalyze() {
         "Be concrete and concise.",
     ].join("\n");
     const { stdout } = await execa("claude", ["-p", seed], { cwd: root, input });
-    await fs.outputFile(out, stdout.trim() + "\n");
+    const text = stdout.trim();
+    await fs.outputFile(out, text + "\n");
+    // parse rough estimate from analysis (e.g., "~8h", "2d", S/M/L)
+    let estH = null;
+    const m = text.match(/(~?\s*(\d+(?:\.\d+)?)([hdw]))/i) || text.match(/\b(S|M|L)\b/i);
+    if (m) {
+        if (m[2]) {
+            const n = parseFloat(m[2]);
+            const unit = m[3].toLowerCase();
+            estH = unit === 'h' ? n : unit === 'd' ? n * 8 : unit === 'w' ? n * 40 : null;
+        }
+        else if (m[1]) {
+            estH = m[1].toUpperCase() === 'S' ? 4 : m[1].toUpperCase() === 'M' ? 16 : 40; // heuristics
+        }
+    }
+    if (estH !== null) {
+        const t = await currentTicket();
+        if (t) {
+            const metaPath = path.join(root, BASE_DIR, t.kind === 'feature' ? 'features' : 'bugs', `${t.index}-${t.slug}`, "README.md");
+            const ticketMeta = path.join(root, ".letscode", "tickets", t.id, "ticket.json");
+            try {
+                const cur = await fs.readJSON(ticketMeta).catch(() => ({}));
+                await fs.outputJSON(ticketMeta, { ...cur, aiEstimateHours: Number(estH.toFixed(1)) }, { spaces: 2 });
+            }
+            catch { }
+        }
+    }
     console.log("[INFO] analysis written:", path.relative(root, out));
 }
