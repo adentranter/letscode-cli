@@ -17,6 +17,9 @@ import { cmdWatch } from "./commands/watch.js";
 import { metricsRollup, metricsPredict, metricsView } from "./commands/metrics.js";
 import { impactScan, impactSet } from "./commands/impact.js";
 import { cmdBaseline } from "./commands/baseline.js";
+import { cmdConfigEdit } from "./commands/config.js";
+import { cmdBackupsList, cmdBackupsOpen } from "./commands/backups.js";
+import { cmdReport } from "./commands/report.js";
 const VERSION = "0.1.0";
 const program = new Command();
 program.name("lc").description("letscode: local store + Claude wiring").version(VERSION);
@@ -98,6 +101,15 @@ program.command("is").description("alias: impact scan").action(impactScan);
 program.command("it").option("--tables <a,b>").option("--apis </x,/y>").option("--files <f,g>").description("alias: impact set").action((opts) => impactSet({ tables: opts.tables, apis: opts.apis, files: opts.files }));
 // baseline
 program.command("baseline").option("--force", "overwrite if exists").description("generate baseline.json using Claude (or local fallback)").action((opts) => cmdBaseline({ force: !!opts.force }));
+// config
+const config = program.command("config").description("configure letscode");
+config.command("edit").description("open ~/.letscode/config.json in $EDITOR").action(cmdConfigEdit);
+// backups UX
+const backups = program.command("backups").description("backup utilities");
+backups.command("list").description("list repos with backups").action(cmdBackupsList);
+backups.command("open").description("open this repo's backup directory").action(cmdBackupsOpen);
+// report
+program.command("report").description("ASCII summary of current repo status").action(cmdReport);
 // zero-arg → status
 if (!process.argv.slice(2).length) {
     await cmdStatus();

@@ -11,7 +11,8 @@
     "build": "tsc -p .",
     "dev": "tsx src/cli.ts",
     "prepublishOnly": "npm run build && node -e \"require('fs').accessSync('dist/cli.js')\"",
-    "smoke": "bash scripts/smoke.sh"
+    "smoke": "bash scripts/smoke.sh",
+    "test": "tsx tests/*.test.ts"
   },
   "files": [
     "dist",
