@@ -5,6 +5,7 @@ import { repoRoot, LOCAL_DIR } from "../lib/paths.js";
 import { currentTicket } from "../lib/git.js";
 import { appendNdjson } from "../lib/util.js";
 import { cmdCmerge } from "./cmerge.js";
+import { cmdRetake } from "./retake.js";
 
 export async function cmdFinish(message?: string) {
   const root = await repoRoot();
@@ -42,6 +43,9 @@ export async function cmdFinish(message?: string) {
 
   // Continue to interactive merge (handles acceptance + close)
   await cmdCmerge({});
+
+  // Auto-refresh scans/baseline after successful merge
+  try { await cmdRetake({ updateReadme: false }); } catch {}
 }
 
 
