@@ -1,7 +1,8 @@
 import fs from "fs-extra";
 import path from "path";
 import { BASE_DIR, repoRoot, ensureLocalScaffold } from "../lib/paths.js";
-export async function cmdStatus() {
+import { currentTicket } from "../lib/git.js";
+export async function cmdStatus(opts) {
     const root = await repoRoot();
     const { progress, todo } = await ensureLocalScaffold(root);
     const fdir = path.join(root, BASE_DIR, "features");
@@ -13,6 +14,22 @@ export async function cmdStatus() {
         .catch(() => "")
         .then((s) => s.trim().split("\n").filter(Boolean).pop())) || "";
     const todos = await fs.readJSON(todo).catch(() => []);
+    const ticket = await currentTicket();
+    if (opts?.json) {
+        const payload = {
+            tickets: { total: f + b, features: f, bugs: b },
+            progress: (() => { try {
+                return last ? JSON.parse(last) : null;
+            }
+            catch {
+                return null;
+            } })(),
+            todos: { total: todos.length, open: todos.filter((t) => !t.doneAt).length },
+            ticket,
+        };
+        console.log(JSON.stringify(payload));
+        return;
+    }
     console.log(`[INFO] tickets total=${f + b} features=${f} bugs=${b}`);
     if (last) {
         try {

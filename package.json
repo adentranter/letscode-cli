@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc -p .",
     "dev": "tsx src/cli.ts",
-    "prepublishOnly": "npm run build && node -e \"require('fs').accessSync('dist/cli.js')\""
+    "prepublishOnly": "npm run build && node -e \"require('fs').accessSync('dist/cli.js')\"",
+    "smoke": "bash scripts/smoke.sh"
   },
   "files": [
     "dist",

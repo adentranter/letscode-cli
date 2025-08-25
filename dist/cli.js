@@ -8,6 +8,10 @@ import { createTicket } from "./commands/featureBug.js";
 import { cmdUpdate } from "./commands/update.js";
 import { cmdBackupSync, cmdBackupWatch, cmdBackupRestore } from "./commands/backup.js";
 import { cmdTodoAdd, cmdTodoDone, cmdTodoList, cmdTodoRemove } from "./commands/todo.js";
+import { cmdContext } from "./commands/context.js";
+import { cmdWhere } from "./commands/where.js";
+import { cmdCommit } from "./commands/commit.js";
+import { cmdCmerge } from "./commands/cmerge.js";
 const VERSION = "0.1.0";
 const program = new Command();
 program.name("lc").description("letscode: local store + Claude wiring").version(VERSION);
@@ -15,7 +19,7 @@ program.name("lc").description("letscode: local store + Claude wiring").version(
 program.command("install").description("one-shot setup (git, stores, Claude hook)").action(cmdInstall);
 program.command("doctor").description("verify environment").action(cmdDoctor);
 program.command("init").description("create .letscode/ and ~/.letscode/").action(cmdInit);
-program.command("status").description("show tickets/progress/todos").action(cmdStatus);
+program.command("status").option("--json", "machine-readable").description("show tickets/progress/todos").action((opts) => cmdStatus({ json: !!opts.json }));
 // todos
 const todo = program.command("todo").description("manage TODOs stored in .letscode/todo.json");
 todo.command("add").argument("<title...>").option("--files <a,b>", "comma-separated files").description("add a TODO").action((title, o) => cmdTodoAdd(title.join(" "), { files: o.files }));
@@ -39,6 +43,14 @@ const backup = program.command("backup").description("mirror .letscode to ~/.let
 backup.command("sync").action(cmdBackupSync);
 backup.command("watch").action(cmdBackupWatch);
 backup.command("restore").option("--force", "overwrite local .letscode").action(cmdBackupRestore);
+// context
+program.command("context").option("--stdout", "print to stdout").description("emit repo context for Claude").action((opts) => cmdContext({ stdout: !!opts.stdout }));
+// where
+program.command("where").description("print repo/local/backup paths").action(cmdWhere);
+// git helpers
+program.command("commit").argument("<message...>", "commit message").option("--no-stage", "do not stage changes before commit").description("stage all (unless --no-stage) and commit + record event").action((message, opts) => cmdCommit(message.join(" "), { stage: opts.stage !== false }));
+program.command("cmerge").option("--message <m>", "merge commit message").option("--skip-build", "skip running build before merge").description("merge current branch into default branch with --no-ff").action((opts) => cmdCmerge({ message: opts.message, skipBuild: !!opts.skipBuild }));
+program.command("merge").option("--message <m>", "merge commit message").option("--skip-build", "skip running build before merge").description("alias of cmerge").action((opts) => cmdCmerge({ message: opts.message, skipBuild: !!opts.skipBuild }));
 // zero-arg → status
 if (!process.argv.slice(2).length) {
     await cmdStatus();
