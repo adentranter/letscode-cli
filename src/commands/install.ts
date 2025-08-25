@@ -1,6 +1,7 @@
 import chalk from "chalk";
 import prompts from "prompts";
 import { ensureGlobalScaffold, ensureLocalScaffold, repoRoot } from "../lib/paths.js";
+import { ensureGitOrThrow } from "../lib/guard.js";
 import { ensureClaudeInstalled, ensureClaudeRepoAccess } from "../lib/claude.js";
 import { execa } from "execa";
 
@@ -10,6 +11,7 @@ export async function cmdInstall() {
   try { await execa("git", ["--version"]); } catch { throw new Error("git is required; please install git first."); }
 
   const root = await repoRoot();
+  await ensureGitOrThrow(true);
   let inRepo = true;
   try { await execa("git", ["rev-parse", "--git-dir"], { cwd: root }); } catch { inRepo = false; }
 

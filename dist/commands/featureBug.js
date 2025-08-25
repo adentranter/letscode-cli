@@ -3,6 +3,7 @@ import fs from "fs-extra";
 import { execa } from "execa";
 import prompts from "prompts";
 import { ensureLocalScaffold, repoRoot, BASE_DIR, LOCAL_DIR } from "../lib/paths.js";
+import { ensureGitOrThrow } from "../lib/guard.js";
 import { slugify } from "../lib/util.js";
 export async function nextIndex(root) {
     const feat = path.join(root, BASE_DIR, "features");
@@ -21,6 +22,7 @@ export async function nextIndex(root) {
 }
 export async function createTicket(kind, rawName, withReadme = false, interactive = false) {
     const root = await repoRoot();
+    await ensureGitOrThrow();
     const { events } = await ensureLocalScaffold(root);
     const idx = await nextIndex(root);
     const slug = slugify(rawName);

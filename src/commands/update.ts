@@ -2,12 +2,15 @@ import path from "path";
 import fs from "fs-extra";
 import prompts from "prompts";
 import { ensureLocalScaffold, repoRoot, LOCAL_DIR } from "../lib/paths.js";
+import { ensureGitOrThrow, warnIfDefaultBranchDirty } from "../lib/guard.js";
 import { currentTicket } from "../lib/git.js";
 
 type UpdateOpts = { progress?: number; files?: string; tag?: string; ask?: boolean };
 
 export async function cmdUpdate(message?: string, opts: UpdateOpts = {}) {
   const root = await repoRoot();
+  await ensureGitOrThrow();
+  await warnIfDefaultBranchDirty();
   const { events, progress } = await ensureLocalScaffold(root);
   const ticket = await currentTicket();
   if (!ticket) throw new Error("Not on a ticket branch (feature/<idx>-<slug> or bug/<idx>-<slug>).");

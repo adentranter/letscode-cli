@@ -127,4 +127,52 @@ main();
   console.log("[INFO] metrics viewer:", path.relative(root, out));
 }
 
+function parseEstimateToHours(s: string | undefined): number | null {
+  if (!s) return null;
+  const m = String(s).trim().match(/^(\d+(?:\.\d+)?)([hdw])?$/i);
+  if (!m) return null;
+  const n = parseFloat(m[1]);
+  const unit = (m[2] || 'h').toLowerCase();
+  if (unit === 'h') return n;
+  if (unit === 'd') return n * 8;
+  if (unit === 'w') return n * 40;
+  return n;
+}
 
+export async function metricsTickets() {
+  const root = await repoRoot();
+  const outDir = path.join(root, LOCAL_DIR, "metrics");
+  await fs.ensureDir(outDir);
+  const ticketsDir = path.join(root, LOCAL_DIR, "tickets");
+  if (!(await fs.pathExists(ticketsDir))) {
+    console.log("[INFO] no tickets yet");
+    return;
+  }
+  const ids = await fs.readdir(ticketsDir);
+  const rows: string[] = ["id,type,index,name,createdAt,closedAt,duration_hours,estimate,estimate_hours,variance_hours"]; 
+  for (const id of ids) {
+    try {
+      const meta = await fs.readJSON(path.join(ticketsDir, id, "ticket.json"));
+      const created = meta.createdAt ? new Date(meta.createdAt) : null;
+      const closed = meta.closedAt ? new Date(meta.closedAt) : null;
+      const durationH = (created && closed) ? ((+closed - +created) / (1000*60*60)) : null;
+      const estH = parseEstimateToHours(meta.estimate);
+      const variance = (durationH!==null && estH!==null) ? (durationH - estH) : null;
+      rows.push([
+        id,
+        meta.type ?? '',
+        meta.index ?? '',
+        JSON.stringify(meta.name ?? ''),
+        meta.createdAt ?? '',
+        meta.closedAt ?? '',
+        durationH!==null ? durationH.toFixed(2) : '',
+        JSON.stringify(meta.estimate ?? ''),
+        estH!==null ? estH.toFixed(2) : '',
+        variance!==null ? variance.toFixed(2) : ''
+      ].join(","));
+    } catch {}
+  }
+  const out = path.join(outDir, "tickets.csv");
+  await fs.outputFile(out, rows.join("\n"));
+  console.log("[INFO] metrics tickets:", path.relative(root, out));
+}
