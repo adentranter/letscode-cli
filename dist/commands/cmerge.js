@@ -73,8 +73,11 @@ export async function cmdCmerge(opts = {}) {
                     else {
                         const { note } = await prompts({ type: "text", name: "note", message: "Acceptance note (optional)" });
                         const ts = new Date().toISOString();
-                        await fs.outputFile(metaPath, JSON.stringify({ ...meta, closedAt: ts, acceptanceNote: note || "" }, null, 2));
-                        await appendNdjson(events, { type: "ticket.accepted", ts, ticket: t.id, acceptance: ac, note: note || "" });
+                        const created = meta?.createdAt ? new Date(meta.createdAt) : null;
+                        const durationH = created ? ((+new Date(ts) - +created) / (1000 * 60 * 60)) : null;
+                        const updated = { ...meta, closedAt: ts, acceptanceNote: note || "", ...(durationH !== null ? { actualHours: Number(durationH.toFixed(2)) } : {}) };
+                        await fs.outputFile(metaPath, JSON.stringify(updated, null, 2));
+                        await appendNdjson(events, { type: "ticket.accepted", ts, ticket: t.id, acceptance: ac, note: note || "", ...(durationH !== null ? { duration_hours: Number(durationH.toFixed(2)) } : {}) });
                     }
                 }
             }
@@ -104,13 +107,6 @@ export async function cmdCmerge(opts = {}) {
         const suggestedCommit = t ? `chore(${t.kind}/${t.index}-${t.slug}): finish before merge` : `chore(${source}): finish before merge`;
         const { cm } = await prompts({ type: "text", name: "cm", message: "Commit message", initial: suggestedCommit });
         await cmdCommit(cm || suggestedCommit, { stage: true });
-    }
-    // Optional: run build if package.json has it and not skipped
-    if (!opts.skipBuild) {
-        try {
-            await execa("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
-        }
-        catch { }
     }
     // Fetch latest
     try {
@@ -156,5 +152,12 @@ export async function cmdCmerge(opts = {}) {
             }
         })()
     });
+    // Optional: run build AFTER merge on target branch
+    if (!opts.skipBuild) {
+        try {
+            await execa("npm", ["run", "build"], { cwd: root, stdio: "inherit" });
+        }
+        catch { }
+    }
     console.log(chalk.green("[GIT] merged"), source, chalk.gray("→"), target);
 }

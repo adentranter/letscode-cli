@@ -96,11 +96,6 @@ export async function cmdCmerge(opts: { message?: string; skipBuild?: boolean } 
     await cmdCommit(cm || suggestedCommit, { stage: true });
   }
 
-  // Optional: run build if package.json has it and not skipped
-  if (!opts.skipBuild) {
-    try { await execa("npm", ["run", "build"], { cwd: root, stdio: "inherit" }); } catch {}
-  }
-
   // Fetch latest
   try { await execa("git", ["fetch", "--all"], { cwd: root, stdio: "inherit" }); } catch {}
 
@@ -137,6 +132,11 @@ export async function cmdCmerge(opts: { message?: string; skipBuild?: boolean } 
       } catch { return undefined; }
     })()
   });
+
+  // Optional: run build AFTER merge on target branch
+  if (!opts.skipBuild) {
+    try { await execa("npm", ["run", "build"], { cwd: root, stdio: "inherit" }); } catch {}
+  }
 
   console.log(chalk.green("[GIT] merged"), source, chalk.gray("→"), target);
 }
