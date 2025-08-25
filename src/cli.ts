@@ -12,6 +12,7 @@ import { cmdContext } from "./commands/context.js";
 import { cmdWhere } from "./commands/where.js";
 import { cmdCommit } from "./commands/commit.js";
 import { cmdCmerge } from "./commands/cmerge.js";
+import { cmdReflect } from "./commands/reflect.js";
 
 const VERSION = "0.1.0";
 const program = new Command();
@@ -61,6 +62,9 @@ program.command("where").description("print repo/local/backup paths").action(cmd
 program.command("commit").argument("<message...>", "commit message").option("--no-stage", "do not stage changes before commit").description("stage all (unless --no-stage) and commit + record event").action((message: string[], opts)=>cmdCommit(message.join(" "), { stage: opts.stage !== false }));
 program.command("cmerge").option("--message <m>", "merge commit message").option("--skip-build", "skip running build before merge").description("merge current branch into default branch with --no-ff").action((opts)=>cmdCmerge({ message: opts.message, skipBuild: !!opts.skipBuild }));
 program.command("merge").option("--message <m>", "merge commit message").option("--skip-build", "skip running build before merge").description("alias of cmerge").action((opts)=>cmdCmerge({ message: opts.message, skipBuild: !!opts.skipBuild }));
+
+// reflect
+program.command("reflect").option("--interactive", "prompt for notes and progress").description("write a reflection snapshot under .letscode/context/").action((opts)=>cmdReflect({ interactive: !!opts.interactive }));
 
 // zero-arg → status
 if (!process.argv.slice(2).length) {
