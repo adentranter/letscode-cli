@@ -86,3 +86,43 @@ lc backup sync    # or `lc backup watch` while you work
 
 # quick glance
 lc status
+
+## Command quick reference
+
+Common:
+- status: `lc status` (alias: `lc s`)
+- feature: `lc feature "Title" --readme` (alias: `lc f`)
+- bug: `lc bug "Title" --readme` (alias: `lc b`)
+- update: `lc update "msg" --progress 25 --files a,b` (aliases: `lc u`, `lc ua` for prompt)
+- todos: `lc todo add/list/done/rm` (aliases: `lc ta/tl/td/tr`)
+- context: `lc context --stdout` (alias: `lc x`)
+- watch: `lc watch --interval 10m` (alias: `lc w`)
+- commit: `lc commit "msg"` (alias: `lc c`)
+- merge: `lc merge` (alias: `lc m`) — interactive, can auto-commit dirty changes
+- reflect: `lc reflect [--interactive]` (aliases: `lc r`, `lc ri`)
+- metrics: `lc metrics rollup|predict|view` (aliases: `lc mr/mp/mv`)
+- impact: `lc impact scan|set` (aliases: `lc is/it`)
+- baseline: `lc baseline [--force]`
+- backup: `lc backup sync|watch|restore [--force]`
+
+## Examples
+
+- Start a feature quickly
+```bash
+lc f "Auth refresh" --readme
+```
+
+- Log a quick prompted update every 10 minutes
+```bash
+lc w --interval 10m
+```
+
+- Merge current ticket interactively
+```bash
+lc m
+```
+
+- Generate baseline via Claude/local
+```bash
+lc baseline
+```
